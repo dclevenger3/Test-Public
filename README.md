@@ -19,6 +19,13 @@ private Chromium browser profile under `data/<slug>/profile/`. You run `school-p
 a real browser window opens on ClassLink, you sign in as that student, and close it. From then on
 the saved session is reused, headlessly, until the school makes you log in again.
 
+For unattended runs (a scheduled job on a machine nobody is sitting at), you can instead put the
+credentials in environment variables, `CLASSLINK_USER_KID1` and `CLASSLINK_PASS_KID1` for slug
+`kid1`, and run `school-planner login kid1 --auto`. `sync` also does this on its own when it finds
+credentials but no saved session. This fills the district sign-in form for you; it cannot get past
+a code sent to a phone. Keep those variables in `.env` or the scheduler's environment, never in
+`config.yaml` or the repo.
+
 The whole `data/` folder is git-ignored. It holds sessions, pulled assignments, and study guides,
 so keep it on the machine you run this on.
 

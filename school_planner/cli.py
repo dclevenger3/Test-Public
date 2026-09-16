@@ -19,10 +19,21 @@ def _today(args) -> date:
 # ---------------- commands ----------------
 
 def cmd_login(cfg: Config, args) -> None:
-    from .browser import login
+    from .browser import auto_login, credentials_from_env, login
 
     student = cfg.student(args.student)
-    login(Store(student.slug), cfg.classlink_url)
+    store = Store(student.slug)
+    if args.auto:
+        creds = credentials_from_env(student.slug)
+        if not creds:
+            key = student.slug.upper().replace("-", "_")
+            raise SystemExit(f"--auto needs CLASSLINK_USER_{key} and CLASSLINK_PASS_{key} in the environment.")
+        ok = auto_login(store, cfg.classlink_url, *creds, headless=not args.show)
+        print("Logged in and session saved." if ok else f"Automatic login failed; see {store.dir/'login-failed.png'}. Try `login {student.slug}` without --auto.")
+        if not ok:
+            raise SystemExit(1)
+    else:
+        login(store, cfg.classlink_url)
 
 
 def cmd_discover(cfg: Config, args) -> None:
@@ -72,6 +83,13 @@ def cmd_sync(cfg: Config, args) -> None:
                 print(f"  {len(courses)} courses, {len(assignments)} assignments ({tests} tests/quizzes). {len(merged)} total on file.")
 
         if any(c.needs_browser for c in conns):
+            from .browser import auto_login, credentials_from_env
+
+            creds = credentials_from_env(student.slug)
+            if creds and not (store.profile_dir / "Default").exists():
+                print(f"{student.name}: no saved session, logging in from environment credentials ...")
+                if not auto_login(store, cfg.classlink_url, *creds, headless=True):
+                    raise SystemExit(f"Automatic login failed; see {store.dir/'login-failed.png'}")
             with browser_session(store, headless=args.headless) as ctx:
                 run_all(ctx)
         else:
@@ -204,7 +222,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--today", help="Pretend today is this date (YYYY-MM-DD). Useful for testing.")
     sub = p.add_subparsers(dest="cmd", required=True)
 
-    s = sub.add_parser("login", help="Open a browser to log a student into ClassLink once."); s.add_argument("student"); s.set_defaults(fn=cmd_login)
+    s = sub.add_parser("login", help="Open a browser to log a student into ClassLink once."); s.add_argument("student"); s.add_argument("--auto", action="store_true", help="Fill the form from CLASSLINK_USER_<SLUG> / CLASSLINK_PASS_<SLUG> env vars"); s.add_argument("--show", action="store_true", help="With --auto, show the browser window"); s.set_defaults(fn=cmd_login)
     s = sub.add_parser("discover", help="List the app tiles on the ClassLink launchpad."); s.add_argument("student"); s.set_defaults(fn=cmd_discover)
     s = sub.add_parser("sync", help="Pull courses and assignments from the configured apps."); s.add_argument("student", nargs="?"); s.add_argument("--headless", action="store_true"); s.set_defaults(fn=cmd_sync)
     s = sub.add_parser("capture", help="Manually capture class pages and let Claude extract the assignments."); s.add_argument("student"); s.add_argument("--url"); s.set_defaults(fn=cmd_capture)

@@ -67,6 +67,71 @@ def login(store: Store, classlink_url: str) -> None:
         print("Session saved." if ok else "Warning: still on a login page. Run login again.")
 
 
+def credentials_from_env(slug: str) -> tuple[str, str] | None:
+    """CLASSLINK_USER_<SLUG> / CLASSLINK_PASS_<SLUG> environment variables, for unattended runs.
+
+    Set these in the environment (or a local .env that is never committed), not in config.yaml.
+    """
+    import os
+
+    key = slug.upper().replace("-", "_")
+    user, pw = os.environ.get(f"CLASSLINK_USER_{key}"), os.environ.get(f"CLASSLINK_PASS_{key}")
+    return (user, pw) if user and pw else None
+
+
+def _first_visible(page: Page, selectors: list[str]):
+    for sel in selectors:
+        loc = page.locator(sel)
+        for i in range(min(loc.count(), 5)):
+            if loc.nth(i).is_visible():
+                return loc.nth(i)
+    return None
+
+
+def auto_login(store: Store, classlink_url: str, username: str, password: str, headless: bool = True) -> bool:
+    """Fill the ClassLink (or the district SSO it redirects to) sign-in form. Best effort.
+
+    Returns True when the launchpad loads. On failure a screenshot is left at data/<slug>/login-failed.png.
+    Districts that require a code sent to a phone cannot be automated; use `login` interactively instead.
+    """
+    with browser_session(store, headless=headless) as ctx:
+        page = ctx.new_page()
+        page.goto(classlink_url, wait_until="domcontentloaded")
+        page.wait_for_timeout(2000)
+        for _ in range(3):  # ClassLink -> district SSO -> back, at most a few hops
+            if "classlink.com" in page.url and "login" not in page.url.lower() and "launchpad" not in page.url.lower():
+                return True
+            user_box = _first_visible(page, ["input[type=email]", "input[name*=user i]", "input[id*=user i]", "input[name=loginfmt]", "input[type=text]"])
+            pass_box = _first_visible(page, ["input[type=password]"])
+            if user_box and user_box.input_value() == "":
+                user_box.fill(username)
+                if not pass_box:  # two-step forms (Microsoft): submit the username first
+                    user_box.press("Enter")
+                    page.wait_for_timeout(2500)
+                    pass_box = _first_visible(page, ["input[type=password]"])
+            if pass_box:
+                pass_box.fill(password)
+                pass_box.press("Enter")
+                page.wait_for_load_state("domcontentloaded")
+                page.wait_for_timeout(4000)
+                stay = _first_visible(page, ["input[value='Yes']", "button:has-text('Yes')", "input[value='No']"])
+                if stay:  # Microsoft "Stay signed in?"
+                    stay.click()
+                    page.wait_for_timeout(2500)
+            else:
+                sso = _first_visible(page, ["button:has-text('Microsoft')", "a:has-text('Microsoft')", "button:has-text('Google')", "a:has-text('Google')", "button:has-text('Sign in')"])
+                if not sso:
+                    break
+                sso.click()
+                page.wait_for_timeout(3000)
+            if "classlink.com" in page.url and "login" not in page.url.lower():
+                page.goto(classlink_url, wait_until="domcontentloaded")
+                page.wait_for_timeout(2000)
+                return True
+        page.screenshot(path=str(store.dir / "login-failed.png"), full_page=True)
+        return False
+
+
 def discover_apps(store: Store, classlink_url: str) -> list[dict]:
     """List the app tiles on the ClassLink launchpad and save them to data/<slug>/apps.json.
 
