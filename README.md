@@ -77,6 +77,18 @@ students:
 If a kid's launchpad has Canvas or Google Classroom, run `login` again and click that tile once so
 the single sign-on cookie gets saved into the profile.
 
+## Sending it out each week
+
+`school-planner weekly` ends by writing one phone-friendly page per kid, plus one for you, into
+`data/outbox/week-<date>/`, for example `Madison.html`. Each kid's page has her week, her upcoming
+tests, and her study guides in full. Send them however you like: attach to a text, AirDrop, or
+email. `scripts/weekly.sh` (Mac/Linux) and `scripts/weekly.bat` (Windows) run the cycle and open
+that folder when done, so the weekly routine is: double-click, then send.
+
+If you would rather it email automatically, give each student an `email:` in `config.yaml`, fill
+the `SMTP_*` lines in `.env` (for Gmail, an App Password from
+https://myaccount.google.com/apppasswords), and run `digest --email` or `weekly --email`.
+
 ## Weekly use
 
 One command does everything:
@@ -105,8 +117,8 @@ school-planner --today 2026-10-01 schedule  # pretend it's another day
 ```
 
 To run it automatically every Sunday evening: on macOS or Linux add a cron line such as
-`0 18 * * 0 cd /path/to/school-planner && .venv/bin/school-planner weekly --email`; on Windows use
-Task Scheduler pointing at `.venv\Scripts\school-planner.exe weekly --email`.
+`0 18 * * 0 /path/to/school-planner/scripts/weekly.sh`; on Windows point Task Scheduler at
+`scripts\weekly.bat`.
 
 ## When the school uses something we don't have a connector for
 

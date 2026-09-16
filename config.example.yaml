@@ -21,22 +21,20 @@ students:
   - name: Madison
     slug: madison
     grade: 8
-    email: madison@example.com
     apps:
       canvas: https://forsyth.instructure.com
       # canvas_feed: https://forsyth.instructure.com/feeds/calendars/user_XXXXXXXX.ics
-  - name: Lily
-    slug: lily
-    grade: 6
-    email: lily@example.com
-    apps:
-      canvas: https://forsyth.instructure.com
-  - name: Ellie
-    slug: ellie
-    grade: 3
-    email: ellie@example.com
-    apps:
-      canvas: https://forsyth.instructure.com
+  # Add the others once you have their logins:
+  # - name: Lily
+  #   slug: lily
+  #   grade: 6
+  #   apps:
+  #     canvas: https://forsyth.instructure.com
+  # - name: Ellie
+  #   slug: ellie
+  #   grade: 3
+  #   apps:
+  #     canvas: https://forsyth.instructure.com
 
 schedule:
   # How many days ahead to look for tests when planning study sessions.
