@@ -80,10 +80,10 @@ def stable_id(student: str, course: str, title: str, due: str) -> str:
 
 
 def extract_assignments(student: str, page_text: str, page_url: str, model: str,
-                        course_hint: str = "", today: datetime | None = None) -> tuple[str, list[Assignment]]:
+                        course_hint: str = "", today: datetime | None = None, backend: str = "claude-code") -> tuple[str, list[Assignment]]:
     """Return (course_name, assignments) extracted from a captured page."""
     user = f"Page URL: {page_url}\nCourse hint: {course_hint or '(unknown)'}\n\n--- PAGE TEXT ---\n{page_text[:120_000]}"
-    data = generate_json(SYSTEM, user, SCHEMA, model=model)
+    data = generate_json(SYSTEM, user, SCHEMA, model=model, backend=backend)
     course = data.get("course_name") or course_hint or "Unknown course"
     out: list[Assignment] = []
     for item in data["assignments"]:

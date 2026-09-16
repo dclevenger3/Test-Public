@@ -39,7 +39,8 @@ class ScheduleConfig:
 class Config:
     timezone: str = "America/New_York"
     classlink_url: str = "https://myapps.classlink.com/home"
-    model: str = "claude-opus-5"
+    backend: str = "claude-code"  # claude-code | api
+    model: str = "opus"
     students: list[Student] = field(default_factory=list)
     schedule: ScheduleConfig = field(default_factory=ScheduleConfig)
 
@@ -71,7 +72,8 @@ def load_config(path: Path = CONFIG_PATH) -> Config:
     return Config(
         timezone=raw.get("timezone", "America/New_York"),
         classlink_url=raw.get("classlink_url", "https://myapps.classlink.com/home"),
-        model=raw.get("model", "claude-opus-5"),
+        backend=raw.get("backend", "claude-code"),
+        model=raw.get("model", "opus"),
         students=students,
         schedule=ScheduleConfig(
             lookahead_days=int(sched.get("lookahead_days", 14)),

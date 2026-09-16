@@ -1,5 +1,6 @@
-"""Wiring tests for the Claude layer. No network: the SDK client is replaced with a fake."""
+"""Wiring tests for the Claude layer. No network: both backends are faked."""
 
+import json
 from datetime import date, datetime
 from types import SimpleNamespace
 
@@ -10,6 +11,63 @@ from school_planner.models import Assignment, Material, Student
 from school_planner.store import Store
 from school_planner.study_guide import build_prompt, generate_study_guide
 
+
+# ---------------- claude-code backend ----------------
+
+class FakeProc:
+    def __init__(self, stdout, returncode=0, stderr=""):
+        self.stdout, self.returncode, self.stderr = stdout, returncode, stderr
+
+
+@pytest.fixture
+def fake_cli(monkeypatch):
+    calls = []
+    envelope = {"is_error": False, "subtype": "success", "result": "# Study Guide", "structured_output": None}
+
+    def run(cmd, **kw):
+        calls.append((cmd, kw))
+        return FakeProc(json.dumps(envelope))
+
+    monkeypatch.setattr(llm.subprocess, "run", run)
+    monkeypatch.setattr(llm, "claude_bin", lambda: "/usr/bin/claude")
+    return calls, envelope
+
+
+def test_cli_text_generation_flags(fake_cli):
+    calls, _ = fake_cli
+    assert llm.generate_text("SYS", "USER", model="opus", effort="high") == "# Study Guide"
+    cmd, kw = calls[0]
+    assert cmd[:2] == ["/usr/bin/claude", "-p"]
+    assert kw["input"] == "USER"
+    for flag, value in (("--model", "opus"), ("--effort", "high"), ("--system-prompt", "SYS"), ("--output-format", "json"), ("--tools", "")):
+        assert cmd[cmd.index(flag) + 1] == value
+    assert "--no-session-persistence" in cmd and "--json-schema" not in cmd
+
+
+def test_cli_json_uses_structured_output(fake_cli):
+    calls, envelope = fake_cli
+    envelope["structured_output"] = {"assignments": []}
+    out = llm.generate_json("SYS", "USER", {"type": "object"}, model="sonnet")
+    assert out == {"assignments": []}
+    cmd, _ = calls[0]
+    assert json.loads(cmd[cmd.index("--json-schema") + 1]) == {"type": "object"}
+
+
+def test_cli_error_envelope_raises(fake_cli):
+    _, envelope = fake_cli
+    envelope.update(is_error=True, result="Not logged in")
+    with pytest.raises(llm.LLMError, match="Not logged in"):
+        llm.generate_text("s", "u")
+
+
+def test_cli_missing_binary(monkeypatch):
+    monkeypatch.setattr(llm.shutil, "which", lambda *_: None)
+    monkeypatch.delenv("CLAUDE_BIN", raising=False)
+    with pytest.raises(SystemExit):
+        llm.claude_bin()
+
+
+# ---------------- api backend ----------------
 
 class FakeMessages:
     def __init__(self, text, stop_reason="end_turn"):
@@ -38,44 +96,41 @@ class FakeMessages:
 
 
 @pytest.fixture
-def fake(monkeypatch):
+def fake_api(monkeypatch):
     fm = FakeMessages('{"ok": true}')
-    monkeypatch.setattr(llm, "client", lambda: SimpleNamespace(beta=SimpleNamespace(messages=fm)))
+    monkeypatch.setattr(llm, "_api_client", lambda: SimpleNamespace(beta=SimpleNamespace(messages=fm)))
     monkeypatch.delenv("SCHOOL_PLANNER_NO_FALLBACK", raising=False)
     return fm
 
 
-def test_generate_json_request_shape(fake):
-    out = llm.generate_json("sys", "user", {"type": "object"}, model="claude-opus-5")
+def test_api_json_request_shape(fake_api):
+    out = llm.generate_json("sys", "user", {"type": "object"}, model="opus", backend="api")
     assert out == {"ok": True}
-    kw = fake.calls[0]
-    assert kw["model"] == "claude-opus-5"
+    kw = fake_api.calls[0]
+    assert kw["model"] == "claude-opus-5"  # alias mapped to a full id
     assert kw["thinking"] == {"type": "adaptive"}
     assert kw["output_config"]["format"]["type"] == "json_schema"
     assert kw["system"][0]["cache_control"] == {"type": "ephemeral"}
     assert kw["fallbacks"] == "default" and "server-side-fallback-2026-07-01" in kw["betas"]
 
 
-def test_generate_text_streams_and_returns_text(fake):
-    fake.text = "# Study Guide"
-    assert llm.generate_text("sys", "user") == "# Study Guide"
-    assert fake.calls[0]["output_config"] == {"effort": "high"}
+def test_api_refusal_raises(fake_api):
+    fake_api.stop_reason = "refusal"
+    with pytest.raises(llm.LLMError):
+        llm.generate_text("sys", "user", backend="api")
 
 
-def test_refusal_raises(fake):
-    fake.stop_reason = "refusal"
-    with pytest.raises(RuntimeError):
-        llm.generate_text("sys", "user")
-
-
-def test_fallback_can_be_disabled(fake, monkeypatch):
+def test_api_fallback_can_be_disabled(fake_api, monkeypatch):
     monkeypatch.setenv("SCHOOL_PLANNER_NO_FALLBACK", "1")
-    llm.generate_text("sys", "user")
-    assert "fallbacks" not in fake.calls[0] and "betas" not in fake.calls[0]
+    llm.generate_text("sys", "user", backend="api")
+    assert "fallbacks" not in fake_api.calls[0]
 
 
-def test_build_prompt_and_generate_guide_writes_file(fake, tmp_path):
-    fake.text = "# Study Guide: Unit 2 Test"
+# ---------------- study guide ----------------
+
+def test_build_prompt_and_generate_guide_writes_file(fake_cli, tmp_path):
+    calls, envelope = fake_cli
+    envelope["result"] = "# Study Guide: Unit 2 Test"
     student = Student(name="Kid One", slug="kid1", grade=7)
     a = Assignment(id="canvas-101", student="kid1", course_id="7", course_name="Science", title="Unit 2 Test",
                    kind="test", due=datetime(2026, 9, 22, 8), description="Cells",
@@ -83,6 +138,6 @@ def test_build_prompt_and_generate_guide_writes_file(fake, tmp_path):
     prompt = build_prompt(student, a, "=== Notes ===\nMitochondria make ATP", today=date(2026, 9, 16))
     assert "6 days away" in prompt and "grade 7" in prompt and "Mitochondria" in prompt
     store = Store("kid1")
-    path = generate_study_guide(store, student, a, "claude-opus-5", ctx=None, today=date(2026, 9, 16))
+    path = generate_study_guide(store, student, a, "opus", ctx=None, today=date(2026, 9, 16))
     assert path.endswith("canvas-101.md") and "Study Guide" in open(path).read()
-    assert "Mitochondria make ATP" in fake.calls[0]["messages"][0]["content"]
+    assert "Mitochondria make ATP" in calls[0][1]["input"]

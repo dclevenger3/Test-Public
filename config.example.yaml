@@ -7,8 +7,12 @@
 timezone: America/New_York
 classlink_url: https://myapps.classlink.com/home
 
-# The Claude model used for study guides and page extraction.
-model: claude-opus-5
+# How to reach Claude.
+#   claude-code  uses the `claude` command and your Claude Code login (default, no API key)
+#   api          uses the Anthropic API with ANTHROPIC_API_KEY from .env
+backend: claude-code
+# Model: an alias (opus, sonnet, haiku) for claude-code, or a full id like claude-opus-5 for api.
+model: opus
 
 students:
   - name: Kid One

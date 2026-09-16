@@ -82,12 +82,13 @@ def build_prompt(student: Student, a: Assignment, material_text: str, today: dat
 
 
 def generate_study_guide(store: Store, student: Student, a: Assignment, model: str,
-                         ctx: BrowserContext | None = None, today: date | None = None) -> str:
+                         ctx: BrowserContext | None = None, today: date | None = None,
+                         backend: str = "claude-code") -> str:
     material_text = gather_materials(ctx, a)
     if ctx is not None:
         store.merge_assignments([a])  # persist any material text we just fetched
     prompt = build_prompt(student, a, material_text, today)
-    guide = generate_text(SYSTEM, prompt, model=model, effort="high")
+    guide = generate_text(SYSTEM, prompt, model=model, effort="high", backend=backend)
     path = store.guides_dir / f"{a.id}.md"
     path.write_text(guide)
     return str(path)

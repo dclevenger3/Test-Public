@@ -23,8 +23,8 @@ COURSE_LINK = re.compile(r"https://classroom\.google\.com/(?:u/\d+/)?c/([\w-]+)$
 class GoogleClassroomConnector(Connector):
     name = "google_classroom"
 
-    def __init__(self, student, base_url: str, model: str, store: Store | None = None):
-        super().__init__(student, base_url or "https://classroom.google.com", model)
+    def __init__(self, student, base_url: str, model: str, backend: str = "claude-code", store: Store | None = None):
+        super().__init__(student, base_url or "https://classroom.google.com", model, backend)
         self.store = store or Store(student.slug)
 
     def sync(self, ctx: BrowserContext) -> tuple[list[Course], list[Assignment]]:
@@ -54,7 +54,7 @@ class GoogleClassroomConnector(Connector):
             _expand_all(page)
             save_capture(self.store, page, f"classroom-{name}")
             course_name, items = extract_assignments(
-                self.student.slug, page_text(page), page.url, self.model, course_hint=name
+                self.student.slug, page_text(page), page.url, self.model, course_hint=name, backend=self.backend
             )
             for a in items:
                 a.source = "google_classroom"

@@ -10,10 +10,11 @@ from ..models import Assignment, Course, Student
 class Connector(ABC):
     name = "base"
 
-    def __init__(self, student: Student, base_url: str, model: str):
+    def __init__(self, student: Student, base_url: str, model: str, backend: str = "claude-code"):
         self.student = student
         self.base_url = base_url.rstrip("/")
         self.model = model
+        self.backend = backend
 
     @abstractmethod
     def sync(self, ctx: BrowserContext) -> tuple[list[Course], list[Assignment]]:

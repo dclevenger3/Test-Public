@@ -22,9 +22,16 @@ the saved session is reused, headlessly, until the school makes you log in again
 The whole `data/` folder is git-ignored. It holds sessions, pulled assignments, and study guides,
 so keep it on the machine you run this on.
 
+## How Claude is used
+
+By default this runs the `claude` command from [Claude Code](https://code.claude.com) in print
+mode, so study guides and page extraction go through **your Claude Code login and subscription**.
+There is no API key to manage. If you would rather pay per call, set `backend: api` in
+`config.yaml` and put `ANTHROPIC_API_KEY` in `.env`.
+
 ## Setup
 
-Requires Python 3.10+ and an [Anthropic API key](https://console.anthropic.com/).
+Requires Python 3.10+ and Claude Code installed and logged in (`claude` on your PATH).
 
 ```bash
 git clone <this repo> school-planner && cd school-planner
@@ -32,7 +39,6 @@ python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\act
 pip install -e .
 playwright install chromium
 
-cp .env.example .env            # put your ANTHROPIC_API_KEY in here
 cp config.example.yaml config.yaml   # one entry per kid
 ```
 
@@ -176,6 +182,12 @@ examples/             sample data to try the scheduler without a login
 
 Run the tests with `pip install -e ".[dev]" && pytest`.
 
+## Using it from inside Claude Code
+
+Open Claude Code in this folder and ask in plain words, for example "run the weekly planner for
+both kids" or "make a study guide for the science test". `CLAUDE.md` tells Claude Code the
+commands and where the files land.
+
 ## Limitations to know about
 
 - The Canvas and Google Classroom connectors were written against the documented APIs and page
@@ -183,5 +195,7 @@ Run the tests with `pip install -e ".[dev]" && pytest`.
   a small selector or URL tweak. `capture` is the reliable fallback while that gets sorted.
 - Study guides are only as good as what the teacher attaches. If notes live on paper, photograph
   them and drop the text into the assignment's `materials` in `assignments.json`.
-- Claude API usage is billed per guide. A typical guide costs well under a dollar; the extraction
-  step for `capture` and Google Classroom costs a few cents per page.
+- With the default backend, each study guide and each captured page is one Claude Code turn
+  against your subscription's usage limits. With `backend: api`, a guide costs well under a dollar.
+- The `claude` command is run with tools turned off and a single turn, so it can only write text;
+  it never reads or changes files on your machine from inside this program.

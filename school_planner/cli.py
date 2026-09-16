@@ -60,7 +60,7 @@ def cmd_sync(cfg: Config, args) -> None:
                     continue
                 print(f"{student.name}: syncing {app} ...")
                 kwargs = {"store": store} if app == "google_classroom" else {}
-                courses, assignments = conn_cls(student, url, cfg.model, **kwargs).sync(ctx)
+                courses, assignments = conn_cls(student, url, cfg.model, cfg.backend, **kwargs).sync(ctx)
                 store.save_courses(courses)
                 merged = store.merge_assignments(assignments)
                 tests = sum(1 for a in assignments if a.is_assessment)
@@ -88,7 +88,7 @@ def cmd_capture(cfg: Config, args) -> None:
                 break
             page = ctx.pages[-1]
             path = save_capture(store, page, page.title() or f"capture-{n}")
-            course, items = extract_assignments(student.slug, page_text(page), page.url, cfg.model, today=datetime.combine(_today(args), datetime.min.time()))
+            course, items = extract_assignments(student.slug, page_text(page), page.url, cfg.model, today=datetime.combine(_today(args), datetime.min.time()), backend=cfg.backend)
             store.merge_assignments(items)
             n += 1
             print(f"Captured '{course}': {len(items)} assignments ({sum(a.is_assessment for a in items)} tests/quizzes). Raw page saved to {path}")
@@ -146,14 +146,14 @@ def cmd_study_guide(cfg: Config, args) -> None:
         if args.no_browser:
             for a in targets:
                 print(f"{student.name}: writing study guide for '{a.title}' ...")
-                print("  ->", generate_study_guide(store, student, a, cfg.model, ctx=None, today=today))
+                print("  ->", generate_study_guide(store, student, a, cfg.model, ctx=None, today=today, backend=cfg.backend))
         else:
             from .browser import browser_session
 
             with browser_session(store, headless=True) as ctx:
                 for a in targets:
                     print(f"{student.name}: fetching notes and writing study guide for '{a.title}' ...")
-                    print("  ->", generate_study_guide(store, student, a, cfg.model, ctx=ctx, today=today))
+                    print("  ->", generate_study_guide(store, student, a, cfg.model, ctx=ctx, today=today, backend=cfg.backend))
 
 
 def cmd_digest(cfg: Config, args) -> None:
