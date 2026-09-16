@@ -12,6 +12,7 @@ schedule, and writes study guides for tests. The parent runs it on their own mac
 - `school-planner list [slug] [--tests]` shows what is on file.
 - `school-planner schedule [slug] [--next]` prints the week and writes `data/schedules/week-*.md` and `.ics`.
 - `school-planner study-guide [slug] [assignment] [--force] [--no-browser]` writes `data/<slug>/guides/<id>.md`.
+- `school-planner practice <slug> [assignment | --topic T] [--questions N] [--level easier|normal|harder] [--open]` writes a fresh self-grading practice test to `data/<slug>/practice/`.
 - `school-planner digest [--email]` writes `data/digests/week-*.md`.
 - `school-planner weekly [--email]` does sync, schedule, study guides, digest.
 - Add `--today YYYY-MM-DD` before the subcommand to pretend it is another day.
@@ -20,6 +21,7 @@ schedule, and writes study guides for tests. The parent runs it on their own mac
 
 - `/setup` walks through first-time installation, config, logins, and the first sync.
 - `/weekly` runs the week's cycle and opens the outbox folder with each child's page.
+- `/practice` makes a fresh practice test on demand for a test on file or any topic.
 
 ## Rules
 

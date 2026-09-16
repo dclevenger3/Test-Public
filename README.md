@@ -176,6 +176,20 @@ the guide says so at the top and works from the test title and description only.
 Material fetching handles Google Docs and Slides (via export), Google Drive files, PDFs, Canvas
 pages and files, and plain web pages, all through the kid's logged-in session.
 
+## Practice tests on demand
+
+```bash
+school-planner practice madison "unit 2" --open            # for a test on file
+school-planner practice lily --topic "adding fractions"     # any topic, no Canvas item needed
+school-planner practice madison "unit 2" --level harder --questions 20
+```
+
+Each run writes a new self-contained page under `data/<slug>/practice/`. She opens it on a phone,
+answers, taps "Check my answers", and sees her score with an explanation for every question.
+"Print with answer key" makes a paper version. Questions are grounded in the attached notes, and
+every run remembers what it already asked for that test so a second or third practice test is new
+material, not a rerun.
+
 ## Other things this can do, or could next
 
 Already in:
@@ -189,7 +203,6 @@ Reasonable next steps, in rough order of value:
 - **Flashcard export** to Quizlet or Anki from the flashcards table in each guide.
 - **Grade tracking** from PowerSchool or Infinite Campus if the launchpad has one (a connector like `canvas.py` using their APIs).
 - **Text message digest** via Twilio or an email-to-SMS gateway instead of email.
-- **Practice quiz mode**: a tiny web page that asks the practice questions one at a time and scores them.
 - **Teacher email drafts** when a kid has missing work, from the digest.
 - **Schoology connector** if `discover` shows Schoology; the `capture` path works meanwhile.
 

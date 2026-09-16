@@ -6,14 +6,14 @@ import json
 from dataclasses import asdict
 from pathlib import Path
 
-from .config import DATA_DIR
+from . import config
 from .models import Assignment, Course
 
 
 class Store:
-    def __init__(self, slug: str, data_dir: Path = DATA_DIR):
+    def __init__(self, slug: str, data_dir: Path | None = None):
         self.slug = slug
-        self.dir = data_dir / slug
+        self.dir = (data_dir or config.DATA_DIR) / slug  # resolved at call time so tests can redirect it
         self.dir.mkdir(parents=True, exist_ok=True)
         (self.dir / "guides").mkdir(exist_ok=True)
         (self.dir / "captures").mkdir(exist_ok=True)

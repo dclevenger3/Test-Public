@@ -46,7 +46,7 @@ def _run_claude(system: str, user: str, model: str, effort: str, schema: dict | 
         claude_bin(), "-p",
         "--output-format", "json",
         "--no-session-persistence",
-        "--max-turns", "1",
+        "--max-turns", "3",              # schema output uses an internal extra turn; tools stay off
         "--tools", "",                 # pure generation: no file or shell access
         "--model", model,
         "--effort", effort,

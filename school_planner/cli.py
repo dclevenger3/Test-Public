@@ -185,6 +185,35 @@ def cmd_study_guide(cfg: Config, args) -> None:
                     print("  ->", generate_study_guide(store, student, a, cfg.model, ctx=ctx, today=today, backend=cfg.backend))
 
 
+def cmd_practice(cfg: Config, args) -> None:
+    """Fresh practice test, self-grading in the browser, for a test on file or any topic."""
+    from .practice import generate_practice_test
+
+    student = cfg.student(args.student)
+    store = Store(student.slug)
+    today = _today(args)
+    assignment = None if args.topic else store.find_assignment(args.assignment or "")
+    label = args.topic or assignment.title
+    print(f"{student.name}: writing a {args.questions}-question practice test on '{label}' ({args.level}) ...")
+
+    def run(ctx):
+        return generate_practice_test(store, student, cfg.model, cfg.backend, assignment=assignment, topic=args.topic,
+                                      n=args.questions, level=args.level, ctx=ctx, today=today)
+
+    if assignment is not None and not args.no_browser and any(not m.text for m in assignment.materials):
+        from .browser import browser_session
+
+        with browser_session(store, headless=True) as ctx:
+            path = run(ctx)
+    else:
+        path = run(None)
+    print(f"  -> {path}\nOpen it in a browser (or send it to her phone). It grades itself; 'Print with answer key' makes a paper copy.")
+    if args.open:
+        import webbrowser
+
+        webbrowser.open(path.as_uri())
+
+
 def cmd_digest(cfg: Config, args) -> None:
     from .report import build_digest, build_student_digest, email_digest, send_email, sms_summary, write_digest
 
@@ -247,6 +276,7 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("list", help="Show assignments on file."); s.add_argument("student", nargs="?"); s.add_argument("--tests", action="store_true", help="Only tests and quizzes"); s.set_defaults(fn=cmd_list)
     s = sub.add_parser("schedule", help="Print and save this week's schedule (Markdown + .ics)."); s.add_argument("student", nargs="?"); s.add_argument("--next", action="store_true", help="Next week instead of this week"); s.set_defaults(fn=cmd_schedule)
     s = sub.add_parser("study-guide", help="Write study guides for upcoming tests (or one assignment)."); s.add_argument("student", nargs="?"); s.add_argument("assignment", nargs="?", help="Assignment id or part of its title"); s.add_argument("--force", action="store_true", help="Regenerate even if a guide exists"); s.add_argument("--no-browser", action="store_true", help="Use only material text already on file"); s.set_defaults(fn=cmd_study_guide)
+    s = sub.add_parser("practice", help="Make a fresh practice test now, for a test on file or any topic."); s.add_argument("student"); s.add_argument("assignment", nargs="?", help="Assignment id or part of its title"); s.add_argument("--topic", help="Free topic instead of an assignment, e.g. 'adding fractions'"); s.add_argument("--questions", type=int, default=15); s.add_argument("--level", choices=["easier", "normal", "harder"], default="normal"); s.add_argument("--no-browser", action="store_true", help="Do not fetch notes, use what is on file"); s.add_argument("--open", action="store_true", help="Open the test in your browser when done"); s.set_defaults(fn=cmd_practice)
     s = sub.add_parser("digest", help="Weekly digests: one for you, one per kid with her study guides."); s.add_argument("--email", action="store_true", help="Email each kid hers and you the combined one"); s.add_argument("--quiet", action="store_true"); s.set_defaults(fn=cmd_digest)
     s = sub.add_parser("weekly", help="sync + schedule + study guides + digest in one go."); s.add_argument("student", nargs="?"); s.add_argument("--email", action="store_true"); s.set_defaults(fn=cmd_weekly)
     return p
