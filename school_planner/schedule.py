@@ -66,6 +66,14 @@ def build_events(assignments: list[Assignment], cfg: ScheduleConfig, start: date
         for ev in study_sessions(a, cfg, today):
             if start <= ev.day <= end:
                 events.append(ev)
+    seen: set[tuple] = set()
+    deduped: list[Event] = []
+    for e in events:  # the same test pulled from two sources should not double its study sessions
+        key = (e.day, e.student, e.kind, e.label.lower())
+        if key not in seen:
+            seen.add(key)
+            deduped.append(e)
+    events = deduped
     order = {"exam": 0, "test": 0, "quiz": 1, "project": 2, "study": 3, "homework": 4, "reading": 5, "other": 6}
     events.sort(key=lambda e: (e.day, e.student, order.get(e.kind, 9), e.label))
     return events

@@ -15,21 +15,28 @@ backend: claude-code
 model: opus
 
 students:
-  - name: Kid One
-    slug: kid1
-    grade: 7
-    # Optional. Leave apps empty and run `school-planner discover kid1` to find them.
+  # One entry per kid. `slug` is the short name used on the command line and in data/.
+  # `email` is where her weekly digest and study guides go. `sms_email` (optional) is a carrier
+  # text gateway address, e.g. 5551234567@vtext.com (Verizon), @txt.att.net, @tmomail.net.
+  - name: Madison
+    slug: madison
+    grade: 8
+    email: madison@example.com
     apps:
-      # Browser-based Canvas sync (full: submission status, module notes). Needs `login` once.
-      # canvas: https://yourdistrict.instructure.com
-      # Canvas private calendar feed (no login, works from anywhere). Canvas Calendar page,
-      # "Calendar Feed" link at the bottom right, copy the URL ending in .ics.
-      # canvas_feed: https://yourdistrict.instructure.com/feeds/calendars/user_XXXXXXXX.ics
-      # google_classroom: https://classroom.google.com
-  - name: Kid Two
-    slug: kid2
-    grade: 4
-    apps: {}
+      canvas: https://forsyth.instructure.com
+      # canvas_feed: https://forsyth.instructure.com/feeds/calendars/user_XXXXXXXX.ics
+  - name: Lily
+    slug: lily
+    grade: 6
+    email: lily@example.com
+    apps:
+      canvas: https://forsyth.instructure.com
+  - name: Ellie
+    slug: ellie
+    grade: 3
+    email: ellie@example.com
+    apps:
+      canvas: https://forsyth.instructure.com
 
 schedule:
   # How many days ahead to look for tests when planning study sessions.

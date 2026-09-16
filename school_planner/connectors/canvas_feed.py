@@ -16,6 +16,7 @@ import urllib.request
 from datetime import datetime, timezone
 
 from ..classify import classify
+from ..tz import to_local
 from ..models import Assignment, Course
 from .base import Connector
 from .canvas import _materials_from_html, _strip_html
@@ -63,7 +64,7 @@ def _parse_dt(value: str, params: str) -> datetime | None:
         if "VALUE=DATE" in params or len(value) == 8:
             return datetime.strptime(value, "%Y%m%d").replace(hour=23, minute=59)
         if value.endswith("Z"):
-            return datetime.strptime(value, "%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc).astimezone().replace(tzinfo=None)
+            return to_local(datetime.strptime(value, "%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc))
         return datetime.strptime(value, "%Y%m%dT%H%M%S")
     except ValueError:
         return None

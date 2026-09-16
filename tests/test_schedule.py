@@ -73,3 +73,12 @@ def test_render_markdown_and_ics():
     ics = render_ics(events)
     assert ics.startswith("BEGIN:VCALENDAR") and ics.count("BEGIN:VEVENT") == len(events)
     assert "DTSTART;VALUE=DATE:20260918" in ics
+
+
+def test_duplicate_source_entries_do_not_double_study_sessions():
+    cfg = ScheduleConfig(study_days_before=[2, 1])
+    items = [A("t1", "Unit 2 Test", "test", datetime(2026, 9, 18, 8)), A("t2", "Unit 2 Test", "test", datetime(2026, 9, 18, 8))]
+    start, end = week_bounds(TODAY)
+    events = build_events(items, cfg, start, end, TODAY)
+    assert sum(1 for e in events if e.kind == "study") == 2
+    assert sum(1 for e in events if e.kind == "test") == 1

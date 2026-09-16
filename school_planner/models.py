@@ -17,6 +17,8 @@ class Student:
     slug: str
     grade: Optional[int] = None
     apps: dict[str, str] = field(default_factory=dict)
+    email: str = ""  # where this student's weekly digest and study guides are sent
+    sms_email: str = ""  # optional carrier email-to-text address, e.g. 5551234567@vtext.com
 
 
 @dataclass

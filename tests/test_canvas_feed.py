@@ -56,3 +56,11 @@ def test_parse_feed_extracts_assignments_and_courses():
 def test_feed_ids_match_browser_connector_ids():
     _, items = parse_feed(ICS, "kid1")
     assert all(a.id.startswith("canvas-") for a in items)
+
+
+def test_feed_times_use_configured_timezone():
+    from school_planner.tz import set_timezone
+
+    set_timezone("America/New_York")
+    _, items = parse_feed(ICS, "kid1")
+    assert items[1].due == datetime(2026, 9, 17, 23, 59)  # 03:59Z on the 18th is 11:59 PM Eastern on the 17th

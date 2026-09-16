@@ -65,6 +65,8 @@ def load_config(path: Path = CONFIG_PATH) -> Config:
             slug=s["slug"],
             grade=s.get("grade"),
             apps={k: v for k, v in (s.get("apps") or {}).items() if v},
+            email=s.get("email", "") or "",
+            sms_email=s.get("sms_email", "") or "",
         )
         for s in raw.get("students", [])
     ]

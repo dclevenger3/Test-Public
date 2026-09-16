@@ -101,8 +101,8 @@ def auto_login(store: Store, classlink_url: str, username: str, password: str, h
         for _ in range(3):  # ClassLink -> district SSO -> back, at most a few hops
             if "classlink.com" in page.url and "login" not in page.url.lower() and "launchpad" not in page.url.lower():
                 return True
-            user_box = _first_visible(page, ["input[type=email]", "input[name*=user i]", "input[id*=user i]", "input[name=loginfmt]", "input[type=text]"])
-            pass_box = _first_visible(page, ["input[type=password]"])
+            user_box = _first_visible(page, ["#userNameInput", "input[type=email]", "input[name*=user i]", "input[id*=user i]", "input[name=loginfmt]", "input[type=text]"])
+            pass_box = _first_visible(page, ["#passwordInput", "input[type=password]"])
             if user_box and user_box.input_value() == "":
                 user_box.fill(username)
                 if not pass_box:  # two-step forms (Microsoft): submit the username first

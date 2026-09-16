@@ -14,6 +14,7 @@ from playwright.sync_api import BrowserContext
 
 from ..classify import classify
 from ..materials import looks_like_notes
+from ..tz import to_local
 from ..models import Assignment, Course, Material
 from .base import Connector
 
@@ -130,7 +131,7 @@ def _next_link(link_header: str) -> str | None:
 def _parse_iso(s: str | None) -> datetime | None:
     if not s:
         return None
-    return datetime.fromisoformat(s.replace("Z", "+00:00")).astimezone().replace(tzinfo=None)
+    return to_local(datetime.fromisoformat(s.replace("Z", "+00:00")))
 
 
 def _strip_html(html: str) -> str:

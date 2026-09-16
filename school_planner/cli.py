@@ -186,16 +186,27 @@ def cmd_study_guide(cfg: Config, args) -> None:
 
 
 def cmd_digest(cfg: Config, args) -> None:
-    from .report import build_digest, email_digest, write_digest
+    from .report import build_digest, build_student_digest, email_digest, send_email, sms_summary, write_digest
 
     today = _today(args)
     text = build_digest(cfg, today)
     path = write_digest(text, today)
-    print(text)
-    print(f"\nSaved to {path}")
+    if not args.quiet:
+        print(text)
+    print(f"Parent digest saved to {path}")
+    for student in cfg.students:
+        kid_text = build_student_digest(cfg, student, today)
+        kid_path = write_digest(kid_text, today, student.slug)
+        print(f"{student.name}'s digest saved to {kid_path}")
+        if args.email and student.email:
+            sent = send_email(student.email, f"{student.name.split()[0]}, your school week of {today:%b %d}", kid_text)
+            print(f"  emailed to {student.email}" if sent else "  email not configured (set SMTP_* in .env)")
+        if args.email and student.sms_email:
+            sent = send_email(student.sms_email, "", sms_summary(cfg, student, today), html=False)
+            print(f"  texted via {student.sms_email}" if sent else "  text not sent (SMTP not configured)")
     if args.email:
-        sent = email_digest(text, f"School week of {today:%b %d}")
-        print("Emailed." if sent else "Email not configured (set SMTP_* and DIGEST_TO in .env).")
+        sent = email_digest(text, f"School week of {today:%b %d} (all kids)")
+        print("Parent digest emailed." if sent else "Parent digest not emailed (set SMTP_* and DIGEST_TO in .env).")
 
 
 def cmd_weekly(cfg: Config, args) -> None:
@@ -206,6 +217,7 @@ def cmd_weekly(cfg: Config, args) -> None:
     cmd_schedule(cfg, args)
     args.assignment, args.force, args.no_browser = None, False, False
     cmd_study_guide(cfg, args)
+    args.quiet = True
     cmd_digest(cfg, args)
 
 
@@ -229,7 +241,7 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("list", help="Show assignments on file."); s.add_argument("student", nargs="?"); s.add_argument("--tests", action="store_true", help="Only tests and quizzes"); s.set_defaults(fn=cmd_list)
     s = sub.add_parser("schedule", help="Print and save this week's schedule (Markdown + .ics)."); s.add_argument("student", nargs="?"); s.add_argument("--next", action="store_true", help="Next week instead of this week"); s.set_defaults(fn=cmd_schedule)
     s = sub.add_parser("study-guide", help="Write study guides for upcoming tests (or one assignment)."); s.add_argument("student", nargs="?"); s.add_argument("assignment", nargs="?", help="Assignment id or part of its title"); s.add_argument("--force", action="store_true", help="Regenerate even if a guide exists"); s.add_argument("--no-browser", action="store_true", help="Use only material text already on file"); s.set_defaults(fn=cmd_study_guide)
-    s = sub.add_parser("digest", help="Weekly parent digest: schedule, upcoming tests, missing work."); s.add_argument("--email", action="store_true"); s.set_defaults(fn=cmd_digest)
+    s = sub.add_parser("digest", help="Weekly digests: one for you, one per kid with her study guides."); s.add_argument("--email", action="store_true", help="Email each kid hers and you the combined one"); s.add_argument("--quiet", action="store_true"); s.set_defaults(fn=cmd_digest)
     s = sub.add_parser("weekly", help="sync + schedule + study guides + digest in one go."); s.add_argument("student", nargs="?"); s.add_argument("--email", action="store_true"); s.set_defaults(fn=cmd_weekly)
     return p
 
@@ -237,6 +249,9 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> None:
     args = build_parser().parse_args(argv)
     cfg = load_config()
+    from .tz import set_timezone
+
+    set_timezone(cfg.timezone)
     args.fn(cfg, args)
 
 
