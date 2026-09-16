@@ -1,0 +1,15 @@
+# Local data: browser profiles, cookies, pulled assignments, study guides.
+# These contain your kids' school data and login sessions. Never commit them.
+data/
+profiles/
+.env
+config.yaml
+
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+.venv/
+venv/

@@ -1,0 +1,32 @@
+# Copy to config.yaml and edit. config.yaml is git-ignored.
+#
+# Passwords are NOT stored here. Each student gets their own persistent browser
+# profile under data/profiles/<slug>/. You log in once with `school-planner login <slug>`
+# and the session is reused after that.
+
+timezone: America/New_York
+classlink_url: https://myapps.classlink.com/home
+
+# The Claude model used for study guides and page extraction.
+model: claude-opus-5
+
+students:
+  - name: Kid One
+    slug: kid1
+    grade: 7
+    # Optional. Leave apps empty and run `school-planner discover kid1` to find them.
+    apps:
+      # canvas: https://yourdistrict.instructure.com
+      # google_classroom: https://classroom.google.com
+  - name: Kid Two
+    slug: kid2
+    grade: 4
+    apps: {}
+
+schedule:
+  # How many days ahead to look for tests when planning study sessions.
+  lookahead_days: 14
+  # Study sessions inserted before each test/quiz, in days before the due date.
+  study_days_before: [4, 2, 1]
+  # Minutes per study session shown on the schedule.
+  study_session_minutes: 30
