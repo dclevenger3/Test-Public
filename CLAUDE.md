@@ -7,7 +7,7 @@ schedule, and writes study guides for tests. The parent runs it on their own mac
 
 - `school-planner login <slug>` opens a browser so the parent logs a kid into ClassLink once. Never ask for or store passwords.
 - `school-planner discover <slug>` lists the launchpad tiles; use it to find which LMS to put under `apps:` in config.yaml.
-- `school-planner sync [slug] --headless` pulls courses and assignments into `data/<slug>/assignments.json`.
+- `school-planner sync [slug] --headless` pulls courses and assignments into `data/<slug>/assignments.json`. Connectors: `canvas` (browser session), `canvas_feed` (private .ics URL, no browser), `google_classroom` (page capture).
 - `school-planner capture <slug>` manual page capture for any LMS; Claude extracts the assignments.
 - `school-planner list [slug] [--tests]` shows what is on file.
 - `school-planner schedule [slug] [--next]` prints the week and writes `data/schedules/week-*.md` and `.ics`.

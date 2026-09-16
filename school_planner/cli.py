@@ -52,19 +52,30 @@ def cmd_sync(cfg: Config, args) -> None:
         if not student.apps:
             print(f"{student.name}: no apps configured. Run discover, then fill apps: in config.yaml.")
             continue
-        with browser_session(store, headless=args.headless) as ctx:
-            for app, url in student.apps.items():
-                conn_cls = REGISTRY.get(app)
-                if not conn_cls:
-                    print(f"{student.name}: no connector for '{app}', skipping (use capture).")
-                    continue
-                print(f"{student.name}: syncing {app} ...")
-                kwargs = {"store": store} if app == "google_classroom" else {}
-                courses, assignments = conn_cls(student, url, cfg.model, cfg.backend, **kwargs).sync(ctx)
-                store.save_courses(courses)
+        conns = []
+        for app, url in student.apps.items():
+            conn_cls = REGISTRY.get(app)
+            if not conn_cls:
+                print(f"{student.name}: no connector for '{app}', skipping (use capture).")
+                continue
+            kwargs = {"store": store} if app == "google_classroom" else {}
+            conns.append(conn_cls(student, url, cfg.model, cfg.backend, **kwargs))
+
+        def run_all(ctx):
+            for conn in conns:
+                print(f"{student.name}: syncing {conn.name} ...")
+                courses, assignments = conn.sync(ctx if conn.needs_browser else None)
+                if courses:
+                    store.save_courses(courses)
                 merged = store.merge_assignments(assignments)
                 tests = sum(1 for a in assignments if a.is_assessment)
                 print(f"  {len(courses)} courses, {len(assignments)} assignments ({tests} tests/quizzes). {len(merged)} total on file.")
+
+        if any(c.needs_browser for c in conns):
+            with browser_session(store, headless=args.headless) as ctx:
+                run_all(ctx)
+        else:
+            run_all(None)
 
 
 def cmd_capture(cfg: Config, args) -> None:

@@ -20,7 +20,11 @@ students:
     grade: 7
     # Optional. Leave apps empty and run `school-planner discover kid1` to find them.
     apps:
+      # Browser-based Canvas sync (full: submission status, module notes). Needs `login` once.
       # canvas: https://yourdistrict.instructure.com
+      # Canvas private calendar feed (no login, works from anywhere). Canvas Calendar page,
+      # "Calendar Feed" link at the bottom right, copy the URL ending in .ics.
+      # canvas_feed: https://yourdistrict.instructure.com/feeds/calendars/user_XXXXXXXX.ics
       # google_classroom: https://classroom.google.com
   - name: Kid Two
     slug: kid2

@@ -114,6 +114,22 @@ school-planner capture kid2
 Google Classroom uses this same approach under the hood because its pages change often. Canvas
 uses its JSON API directly, which is faster and also picks up submission status (missing work).
 
+## Canvas without a browser: the calendar feed
+
+Many districts disable personal access tokens for students, but Canvas still gives every user a
+private calendar feed. Logged in as the kid, open Canvas, click Calendar, then the "Calendar Feed"
+link at the bottom right, and copy the URL ending in `.ics`. Put it in `config.yaml`:
+
+```yaml
+    apps:
+      canvas_feed: https://yourdistrict.instructure.com/feeds/calendars/user_XXXXXXXX.ics
+```
+
+`sync` then needs no browser at all, so it can run on a schedule from any machine. The feed has
+every assignment and quiz with a due date and the description's links, but not submission status
+or module notes. Use both `canvas` and `canvas_feed` together for the full picture; they share ids
+and merge cleanly. Treat the feed URL like a password: anyone with it can read the calendar.
+
 ## What gets flagged as a test
 
 Titles and descriptions are classified with simple rules (`school_planner/classify.py`):

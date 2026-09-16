@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 from .config import ScheduleConfig
 from .models import Assignment
@@ -116,7 +116,7 @@ def render_ics(events: list[Event], calendar_name: str = "School Planner") -> st
     def esc(s: str) -> str:
         return s.replace("\\", "\\\\").replace(",", "\\,").replace(";", "\\;").replace("\n", "\\n")
 
-    stamp = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     out = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//school-planner//EN", f"X-WR-CALNAME:{esc(calendar_name)}"]
     for n, e in enumerate(events):
         uid = f"{e.day:%Y%m%d}-{n}-{abs(hash((e.student, e.label))) % 10**8}@school-planner"
