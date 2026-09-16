@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 import smtplib
 from datetime import date
 from email.message import EmailMessage
@@ -86,6 +87,26 @@ def write_digest(text: str, today: date | None = None, slug: str = "family") -> 
     return path
 
 
+def write_outbox(cfg: Config, today: date | None = None) -> list[Path]:
+    """One self-contained HTML page per kid (plus one for the family) in data/outbox/week-<date>/.
+
+    These are what you send: attach to a text, AirDrop, or email them. Each kid's page has her
+    week, her tests, and her study guides in full.
+    """
+    today = today or date.today()
+    out = DATA_DIR / "outbox" / f"week-{today:%Y-%m-%d}"
+    out.mkdir(parents=True, exist_ok=True)
+    written: list[Path] = []
+    for student in cfg.students:
+        path = out / f"{re.sub(r'[^A-Za-z0-9 _-]', '', student.name).strip() or student.slug}.html"
+        path.write_text(markdown_to_html(build_student_digest(cfg, student, today)), encoding="utf-8")
+        written.append(path)
+    family = out / "Family.html"
+    family.write_text(markdown_to_html(build_digest(cfg, today)), encoding="utf-8")
+    written.append(family)
+    return written
+
+
 # ---------------------------------------------------------------- email
 
 _CSS = """<style>
@@ -96,11 +117,24 @@ code{background:#f3f3f3;padding:1px 4px;border-radius:3px}hr{border:0;border-top
 </style>"""
 
 
+_LIST_LINE = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+")
+
+
+def _space_lists(text: str) -> str:
+    """Markdown needs a blank line before a list; the model often omits it after a bold lead-in."""
+    out: list[str] = []
+    for line in text.splitlines():
+        if _LIST_LINE.match(line) and out and out[-1].strip() and not _LIST_LINE.match(out[-1]) and not out[-1].lstrip().startswith("|"):
+            out.append("")
+        out.append(line)
+    return "\n".join(out)
+
+
 def markdown_to_html(text: str) -> str:
     try:
         import markdown
 
-        body = markdown.markdown(text, extensions=["tables", "sane_lists"])
+        body = markdown.markdown(_space_lists(text), extensions=["tables", "sane_lists"])
     except ImportError:  # keep it readable even without the markdown package
         import html
 

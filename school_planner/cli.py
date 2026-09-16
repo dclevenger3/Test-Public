@@ -207,6 +207,12 @@ def cmd_digest(cfg: Config, args) -> None:
     if args.email:
         sent = email_digest(text, f"School week of {today:%b %d} (all kids)")
         print("Parent digest emailed." if sent else "Parent digest not emailed (set SMTP_* and DIGEST_TO in .env).")
+    from .report import write_outbox
+
+    files = write_outbox(cfg, today)
+    print("\nReady to send (open on a phone, attach to a text, AirDrop, or email):")
+    for f in files:
+        print(f"  {f}")
 
 
 def cmd_weekly(cfg: Config, args) -> None:

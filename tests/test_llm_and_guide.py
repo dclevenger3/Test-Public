@@ -141,3 +141,25 @@ def test_build_prompt_and_generate_guide_writes_file(fake_cli, tmp_path):
     path = generate_study_guide(store, student, a, "opus", ctx=None, today=date(2026, 9, 16))
     assert path.endswith("canvas-101.md") and "Study Guide" in open(path).read()
     assert "Mitochondria make ATP" in calls[0][1]["input"]
+
+
+def test_write_outbox_produces_one_page_per_kid(tmp_path):
+    from school_planner.config import Config, ScheduleConfig
+    from school_planner.report import write_outbox
+
+    cfg = Config(students=[Student(name="Madison", slug="madison", grade=8), Student(name="Lily", slug="lily", grade=6)],
+                 schedule=ScheduleConfig())
+    Store("madison").save_assignments([Assignment(id="t", student="madison", course_id="c", course_name="Science",
+                                                  title="Unit 2 Test", kind="test", due=datetime(2026, 9, 22, 8))])
+    files = write_outbox(cfg, today=date(2026, 9, 16))
+    assert [f.name for f in files] == ["Madison.html", "Lily.html", "Family.html"]
+    assert files[0].parent.name == "week-2026-09-16"
+    html = files[0].read_text()
+    assert "<html" in html and "Unit 2 Test" in html and "Hi Madison" in html
+
+
+def test_markdown_lists_after_bold_lead_in_render_as_lists():
+    from school_planner.report import markdown_to_html
+
+    html = markdown_to_html("**Steps:**\n1. First\n2. Second\n**Words:**\n- a\n- b\n")
+    assert html.count("<li>") == 4
