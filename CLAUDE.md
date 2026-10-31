@@ -10,6 +10,7 @@ schedule, and writes study guides for tests. The parent runs it on their own mac
 - `school-planner sync [slug] --headless` pulls courses and assignments into `data/<slug>/assignments.json`. Connectors: `canvas` (browser session), `canvas_feed` (private .ics URL, no browser), `google_classroom` (page capture).
 - `school-planner capture <slug>` manual page capture for any LMS; Claude extracts the assignments.
 - `school-planner list [slug] [--tests]` shows what is on file.
+- `school-planner next [slug] [--days 5] [--no-sync]` syncs, then prints the next N days by child, by Tests / Quizzes / Homework / Projects, plus past due.
 - `school-planner schedule [slug] [--next]` prints the week and writes `data/schedules/week-*.md` and `.ics`.
 - `school-planner study-guide [slug] [assignment] [--force] [--no-browser]` writes `data/<slug>/guides/<id>.md`.
 - `school-planner practice <slug> [assignment | --topic T] [--questions N] [--level easier|normal|harder] [--open]` writes a fresh self-grading practice test to `data/<slug>/practice/`.
@@ -20,6 +21,7 @@ schedule, and writes study guides for tests. The parent runs it on their own mac
 ## Skills for the parent
 
 - `/setup` walks through first-time installation, config, logins, and the first sync.
+- `/next` shows what's due in the next few days by child and kind.
 - `/weekly` runs the week's cycle and opens the outbox folder with each child's page.
 - `/practice` makes a fresh practice test on demand for a test on file or any topic.
 

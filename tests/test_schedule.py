@@ -82,3 +82,21 @@ def test_duplicate_source_entries_do_not_double_study_sessions():
     events = build_events(items, cfg, start, end, TODAY)
     assert sum(1 for e in events if e.kind == "study") == 2
     assert sum(1 for e in events if e.kind == "test") == 1
+
+
+def test_upcoming_by_child_groups_by_child_then_kind():
+    from school_planner.schedule import upcoming_by_child
+
+    items = [
+        A("t1", "Unit 1 Test", "test", datetime(2026, 9, 18, 8)),
+        A("q1", "Vocab Quiz", "quiz", datetime(2026, 9, 17, 8)),
+        A("h1", "Worksheet 3", "homework", datetime(2026, 9, 16, 23, 59)),
+        A("late", "Old HW", "homework", datetime(2026, 9, 10, 23, 59)),
+        A("far", "Far Test", "test", datetime(2026, 10, 1, 8)),
+        A("l1", "Spelling Test", "test", datetime(2026, 9, 19, 8), student="kid2"),
+    ]
+    out = upcoming_by_child(items, 5, {"kid1": "Madison", "kid2": "Lily"}, TODAY)
+    assert out.index("## Madison") < out.index("**Tests**") < out.index("**Quizzes**") < out.index("**Homework**") < out.index("## Lily")
+    assert "today · Science · Worksheet 3" in out and "tomorrow · Science · Vocab Quiz" in out
+    assert "Far Test" not in out and "Old HW" in out and "Past due" in out
+    assert "Spelling Test" in out

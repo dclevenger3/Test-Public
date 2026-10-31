@@ -141,3 +141,39 @@ def render_ics(events: list[Event], calendar_name: str = "School Planner") -> st
         out.append("END:VEVENT")
     out.append("END:VCALENDAR")
     return "\r\n".join(out) + "\r\n"
+
+
+# ---------- "what's coming" view ----------
+
+KIND_GROUPS = [("Tests", {"test", "exam"}), ("Quizzes", {"quiz"}), ("Homework", {"homework", "reading", "other"}), ("Projects", {"project"})]
+
+
+def upcoming_by_child(assignments: list[Assignment], days: int, students: dict[str, str],
+                      today: date | None = None) -> str:
+    """Everything due in the next `days` days, grouped by child, then Tests / Quizzes / Homework / Projects."""
+    today = today or date.today()
+    horizon = today + timedelta(days=days)
+    lines = [f"# Next {days} days: {today:%a %b %d} to {horizon:%a %b %d}", ""]
+    for slug, name in students.items():
+        mine = sorted((a for a in assignments if a.student == slug and a.due and today <= a.due.date() <= horizon
+                       and a.status not in {"submitted", "graded"}), key=lambda a: a.due)
+        lines.append(f"## {name}")
+        if not mine:
+            lines += ["_nothing due_", ""]
+            continue
+        for label, kinds in KIND_GROUPS:
+            group = [a for a in mine if a.kind in kinds]
+            if not group:
+                continue
+            lines.append(f"**{label}**")
+            for a in group:
+                day = "today" if a.due.date() == today else "tomorrow" if a.due.date() == today + timedelta(days=1) else f"{a.due:%a %b %d}"
+                flag = " ❌ missing" if a.status == "missing" else ""
+                lines.append(f"- {KIND_ICON.get(a.kind, '•')} {day} · {a.course_name} · {a.title}{flag}")
+            lines.append("")
+        late = [a for a in assignments if a.student == slug and a.due and a.due.date() < today and a.status in {"", "missing"}]
+        if late:
+            lines.append(f"**Past due** ({len(late)})")
+            lines += [f"- {a.due:%b %d} · {a.course_name} · {a.title}" for a in sorted(late, key=lambda a: a.due)[-5:]]
+            lines.append("")
+    return "\n".join(lines).rstrip() + "\n"

@@ -135,6 +135,21 @@ def cmd_list(cfg: Config, args) -> None:
             print(f"  {a.id:<18} {due}  [{a.kind:<8}] {a.course_name[:22]:<22} {a.title}{flag}")
 
 
+def cmd_next(cfg: Config, args) -> None:
+    """What's coming in the next N days, by child, by test / quiz / homework. Syncs first unless --no-sync."""
+    from .schedule import upcoming_by_child
+
+    if not args.no_sync:
+        args.headless = True
+        cmd_sync(cfg, args)
+        print()
+    today = _today(args)
+    items: list[Assignment] = []
+    for s in _students(cfg, args):
+        items.extend(Store(s.slug).load_assignments())
+    print(upcoming_by_child(items, args.days, {s.slug: s.name for s in _students(cfg, args)}, today))
+
+
 def cmd_schedule(cfg: Config, args) -> None:
     from .schedule import build_events, render_ics, render_markdown, week_bounds
     from .config import DATA_DIR
@@ -274,6 +289,7 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("sync", help="Pull courses and assignments from the configured apps."); s.add_argument("student", nargs="?"); s.add_argument("--headless", action="store_true"); s.set_defaults(fn=cmd_sync)
     s = sub.add_parser("capture", help="Manually capture class pages and let Claude extract the assignments."); s.add_argument("student"); s.add_argument("--url"); s.set_defaults(fn=cmd_capture)
     s = sub.add_parser("list", help="Show assignments on file."); s.add_argument("student", nargs="?"); s.add_argument("--tests", action="store_true", help="Only tests and quizzes"); s.set_defaults(fn=cmd_list)
+    s = sub.add_parser("next", help="What's due in the next N days, by child, by test / quiz / homework (syncs first)."); s.add_argument("student", nargs="?"); s.add_argument("--days", type=int, default=5); s.add_argument("--no-sync", action="store_true", help="Use what is on file, do not pull from Canvas first"); s.set_defaults(fn=cmd_next)
     s = sub.add_parser("schedule", help="Print and save this week's schedule (Markdown + .ics)."); s.add_argument("student", nargs="?"); s.add_argument("--next", action="store_true", help="Next week instead of this week"); s.set_defaults(fn=cmd_schedule)
     s = sub.add_parser("study-guide", help="Write study guides for upcoming tests (or one assignment)."); s.add_argument("student", nargs="?"); s.add_argument("assignment", nargs="?", help="Assignment id or part of its title"); s.add_argument("--force", action="store_true", help="Regenerate even if a guide exists"); s.add_argument("--no-browser", action="store_true", help="Use only material text already on file"); s.set_defaults(fn=cmd_study_guide)
     s = sub.add_parser("practice", help="Make a fresh practice test now, for a test on file or any topic."); s.add_argument("student"); s.add_argument("assignment", nargs="?", help="Assignment id or part of its title"); s.add_argument("--topic", help="Free topic instead of an assignment, e.g. 'adding fractions'"); s.add_argument("--questions", type=int, default=15); s.add_argument("--level", choices=["easier", "normal", "harder"], default="normal"); s.add_argument("--no-browser", action="store_true", help="Do not fetch notes, use what is on file"); s.add_argument("--open", action="store_true", help="Open the test in your browser when done"); s.set_defaults(fn=cmd_practice)
